@@ -1,13 +1,8 @@
+import { Player, ReturnRegistrationData, Room, Winner } from "./types";
 import { generateId } from "./utils";
-import {
-  RegistrationData,
-  ReturnRegistrationData,
-  Room,
-  Winner,
-} from "./types";
 
 export class Game {
-  private _players: RegistrationData[];
+  private _players: Player[];
   private _rooms: Room[];
   private _winners: Winner[];
 
@@ -17,15 +12,16 @@ export class Game {
     this._winners = [];
   }
 
-  public registration(data: RegistrationData): ReturnRegistrationData {
+  public registration(rawData: string, index: number): ReturnRegistrationData {
+    const data = JSON.parse(rawData) as Player;
     const player = this._players.find((player) => player.name === data.name);
 
     if (!player) {
-      this._players.push(data);
+      this._players.push({ name: data.name, index });
 
       return {
         name: data.name,
-        index: generateId(),
+        index,
         error: false,
         errorText: "",
       };
@@ -33,17 +29,32 @@ export class Game {
 
     return {
       name: data.name,
-      index: generateId(),
+      index: -1,
       error: true,
-      errorText: `User ${data.name} is already exists.`,
+      errorText: `Player ${data.name} is already exists.`,
     };
   }
 
-  public get rooms() {
+  public createRoom(index: number): void {
+    const player = this._players.find((player) => player.index === index);
+    const isRoomHasThisPlayer = this._rooms.some((room) =>
+      room.roomUsers.some((user) => user.index === index)
+    );
+    const isRoomHasPlayers = this._rooms.length;
+
+    if (player && !isRoomHasPlayers && !isRoomHasThisPlayer) {
+      this._rooms.push({
+        roomId: generateId(),
+        roomUsers: [player],
+      });
+    }
+  }
+
+  public get rooms(): Room[] {
     return this._rooms;
   }
 
-  public get winners() {
+  public get winners(): Winner[] {
     return this._winners;
   }
 }

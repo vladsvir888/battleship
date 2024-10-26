@@ -1,14 +1,17 @@
 import { WebSocketServer, Server, WebSocket } from "ws";
 import { Message, Commands, CommandsKeys } from "./types";
 import { Game } from "./Game";
+import { generateId } from "./utils";
 
 export class wsServer {
   private port: number;
   private game: Game;
   private server: Server;
+  private wsStorage: { [key: string]: WebSocket };
 
   constructor() {
     this.port = 3000;
+    this.wsStorage = {};
     this.server = this.startServer();
     this.game = new Game();
   }
@@ -19,17 +22,30 @@ export class wsServer {
     ws.send(message);
   }
 
-  private handleCommands(messageData: Message, ws: WebSocket): void {
+  private handleCommands(
+    messageData: Message,
+    ws: WebSocket,
+    index: number
+  ): void {
     const { type, data } = messageData;
-    const preparedData = JSON.parse(data);
 
     switch (type) {
-      case Commands.reg:
-        const res = this.game.registration(preparedData);
+      case Commands.reg: {
+        const res = this.game.registration(data, index);
         this.sendResponse(type, res, ws);
-        this.sendResponse("update_room", this.game.rooms, ws);
-        this.sendResponse("update_winners", this.game.winners, ws);
+        this.server.clients.forEach((client) => {
+          this.sendResponse("update_room", this.game.rooms, client);
+          this.sendResponse("update_winners", this.game.winners, client);
+        });
         break;
+      }
+      case Commands.create_room: {
+        this.game.createRoom(index);
+        this.server.clients.forEach((client) => {
+          this.sendResponse("update_room", this.game.rooms, client);
+        });
+        break;
+      }
       default:
         break;
     }
@@ -38,33 +54,25 @@ export class wsServer {
   private startServer(): Server {
     const server = new WebSocketServer({ port: this.port });
 
-    server.on("connection", (ws, req) => {
+    server.on("connection", (ws) => {
       console.log(`Start websocket server on the ${this.port} port!`);
+
+      const index = generateId();
+      this.wsStorage[index] = ws;
 
       ws.on("message", (rawData) => {
         const data = JSON.parse(rawData.toString());
-        this.handleCommands(data, ws);
+        this.handleCommands(data, ws, index);
       });
 
-      ws.on("close", this.stopServer.bind(this));
+      ws.on("close", () => {
+        delete this.wsStorage[index];
+        ws.close();
+      });
 
       ws.on("error", console.error);
     });
 
     return server;
-  }
-
-  private stopServer(): void {
-    this.server.clients.forEach((client) => {
-      client.close();
-
-      process.nextTick(() => {
-        if (
-          [client.OPEN, client.CLOSING].includes(client.readyState as 1 | 2)
-        ) {
-          client.terminate();
-        }
-      });
-    });
   }
 }
