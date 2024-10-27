@@ -32,6 +32,7 @@ export class wsServer {
     switch (type) {
       case Commands.reg: {
         const res = this.game.registration(data, index);
+
         this.sendResponse(type, res, ws);
         this.server.clients.forEach((client) => {
           this.sendResponse("update_room", this.game.rooms, client);
@@ -44,6 +45,35 @@ export class wsServer {
         this.server.clients.forEach((client) => {
           this.sendResponse("update_room", this.game.rooms, client);
         });
+        break;
+      }
+      case Commands.add_user_to_room: {
+        const res = this.game.addUserToRoom(data, index);
+
+        if (!res) {
+          this.server.clients.forEach((client) => {
+            this.sendResponse("update_room", this.game.rooms, client);
+          });
+          return;
+        }
+
+        const { idGame, players } = res;
+
+        for (const key in this.wsStorage) {
+          const ws = this.wsStorage[key];
+          const player = players.find((player) => player.idPlayer === +key);
+
+          this.sendResponse("update_room", this.game.rooms, ws);
+          this.sendResponse(
+            "create_game",
+            { idGame, idPlayer: player?.idPlayer },
+            ws
+          );
+        }
+
+        break;
+      }
+      case Commands.add_ships: {
         break;
       }
       default:
@@ -62,6 +92,7 @@ export class wsServer {
 
       ws.on("message", (rawData) => {
         const data = JSON.parse(rawData.toString());
+        console.log(`Command: ${data.type}`);
         this.handleCommands(data, ws, index);
       });
 

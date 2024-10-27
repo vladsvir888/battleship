@@ -1,5 +1,3 @@
-type NumberOrString = number | string;
-
 export enum Commands {
   reg = "reg",
   update_winners = "update_winners",
@@ -23,24 +21,35 @@ export type Message = {
   id: 0;
 };
 
-export type ReturnRegistrationData = {
+export type RegistrationData = {
   name: string;
-  index: NumberOrString;
+  index: number;
   error: boolean;
   errorText: string;
 };
 
 export type Player = {
   name: string;
-  index: NumberOrString;
+  index: number;
 };
 
 export type Room = {
-  roomId: NumberOrString;
+  roomId: number;
   roomUsers: Player[];
 };
 
 export type Winner = {
   name: string;
   wins: number;
+};
+
+export type AddUserToRoomData = {
+  indexRoom: number;
+};
+
+export type CreateGameData = {
+  idGame: number;
+  players: {
+    idPlayer: number;
+  }[];
 };
