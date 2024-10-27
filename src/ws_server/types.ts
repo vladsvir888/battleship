@@ -53,3 +53,33 @@ export type CreateGameData = {
     idPlayer: number;
   }[];
 };
+
+export type Ship = {
+  position: {
+    x: number;
+    y: number;
+  };
+  direction: boolean;
+  length: number;
+  type: "small" | "medium" | "large" | "huge";
+};
+
+export type AddShipsData = {
+  gameId: number;
+  ships: Ship[];
+  indexPlayer: number;
+};
+
+export type GamePlayer = {
+  indexPlayer: number;
+  ships: Ship[];
+};
+
+export type TGame = {
+  [key: string]: {
+    players: GamePlayer[];
+    currentPlayerIndex: number;
+  };
+};
+
+export type TGameValue = TGame[keyof TGame];

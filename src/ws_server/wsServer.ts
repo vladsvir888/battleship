@@ -74,6 +74,29 @@ export class wsServer {
         break;
       }
       case Commands.add_ships: {
+        const res = this.game.startGame(data);
+
+        if (!res) {
+          return;
+        }
+
+        for (const key in this.wsStorage) {
+          const ws = this.wsStorage[key];
+          const player = res.players.find(
+            (player) => player.indexPlayer === +key
+          );
+          this.sendResponse(
+            "start_game",
+            { currentPlayerIndex: player?.indexPlayer, ships: player?.ships },
+            ws
+          );
+          this.sendResponse(
+            "turn",
+            { currentPlayer: res.players[res.currentPlayerIndex].indexPlayer },
+            ws
+          );
+        }
+
         break;
       }
       default:

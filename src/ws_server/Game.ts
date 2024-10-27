@@ -5,6 +5,9 @@ import {
   Winner,
   AddUserToRoomData,
   CreateGameData,
+  AddShipsData,
+  TGame,
+  TGameValue,
 } from "./types";
 import { generateId } from "./utils";
 
@@ -12,11 +15,13 @@ export class Game {
   private _players: Player[];
   private _rooms: Room[];
   private _winners: Winner[];
+  private _game: TGame;
 
   constructor() {
     this._players = [];
     this._rooms = [];
     this._winners = [];
+    this._game = {};
   }
 
   public registration(rawData: string, index: number): RegistrationData {
@@ -97,6 +102,28 @@ export class Game {
       idGame,
       players,
     };
+  }
+
+  public startGame(rawData: string): TGameValue | undefined {
+    const { gameId, indexPlayer, ships } = JSON.parse(rawData) as AddShipsData;
+    const player = {
+      indexPlayer,
+      ships,
+    };
+
+    if (this._game[gameId]) {
+      this._game[gameId].players.push(player);
+      this._game[gameId].currentPlayerIndex = Math.round(Math.random());
+      return {
+        players: this._game[gameId].players,
+        currentPlayerIndex: this._game[gameId].currentPlayerIndex,
+      };
+    } else {
+      this._game[gameId] = {
+        players: [player],
+        currentPlayerIndex: 0,
+      };
+    }
   }
 
   public get players(): Player[] {
